@@ -1,0 +1,51 @@
+name: SonarCloud (Node.js)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    defaults:
+      run:
+        working-directory: job-helper  # all `run:` commands execute here
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      # (no tests yet — add later when you have them)
+
+      - name: Debug (verify props are visible)
+        run: |
+          pwd
+          ls -la
+          test -f sonar-project.properties && echo "Found sonar-project.properties" && head -n 20 sonar-project.properties
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        with:
+          args: 
+            -Dsonar.projectBaseDir=job-helper
+            -Dsonar.organization=davidbprojects
+            -Dsonar.projectKey=davidbprojects_resume-match-supabase-vercel
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
